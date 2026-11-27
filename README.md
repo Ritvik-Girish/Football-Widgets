@@ -37,3 +37,77 @@ Clone the repository or download the source ZIP directly from GitHub:
 
 ```bash
 git clone [https://github.com/Ritvik-Girish/universal-football-widget.git](https://github.com/Ritvik-Girish/universal-football-widget.git)
+```
+
+### 2. Run as a Desktop Widget
+
+#### **Windows (WidgetWall / Rainmeter WebView)**
+1. Open **WidgetWall** (or your preferred HTML desktop widget engine) and create a new **Web / HTML Widget**.
+2. Point the source path to your downloaded `index.html` file.
+3. Enable **Transparent Background** in the widget's window settings (`background: transparent !important;` is already configured in the stylesheet).
+4. Set the container dimensions to **`360px` × `285px`** for optimal card proportions.
+
+#### **macOS (Übersicht)**
+1. Move the widget folder into your Übersicht widgets directory (`~/Library/Application Support/Übersicht/widgets/`).
+2. Point your widget wrapper to `index.html` and position it on your desktop.
+
+> **💡 Local Browser Preview:** If opening `index.html` directly in Chrome or Safari (`file://`), strict browser CORS rules may block external API requests. Serve the folder locally instead:
+> ```bash
+> npx serve .
+> # or
+> python3 -m http.server 8080
+> ```
+
+---
+
+## ⚙️ Configuration & URL Parameters
+
+You can configure your club directly inside the widget's **Settings Drawer (`⚙`)**, or override the default team at launch by appending query parameters to the widget URL:
+
+```text
+index.html?league=esp.1&team=86
+```
+
+### Supported League Codes
+
+| League | Country | Query Code (`league=`) |
+| :--- | :--- | :--- |
+| **Premier League** | England | `eng.1` |
+| **La Liga** | Spain | `esp.1` |
+| **Serie A** | Italy | `ita.1` |
+| **Bundesliga** | Germany | `ger.1` |
+| **Ligue 1** | France | `fra.1` |
+
+### Popular Team IDs (`team=`)
+
+| Club | League | ESPN Team ID |
+| :--- | :--- | :--- |
+| **Manchester United** | `eng.1` | `360` |
+| **Liverpool** | `eng.1` | `364` |
+| **Arsenal** | `eng.1` | `359` |
+| **Real Madrid** | `esp.1` | `86` |
+| **FC Barcelona** | `esp.1` | `83` |
+| **Bayern Munich** | `ger.1` | `132` |
+| **Juventus** | `ita.1` | `111` |
+| **Paris Saint-Germain** | `fra.1` | `160` |
+
+---
+
+## 🏗️ Architecture & Tech Stack
+
+- **HTML5 & CSS3:** Semantic layout powered by CSS Custom Properties (`--accent`, `--accent-rgb`, `--accent-fg`), Flexbox, and YIQ brightness calculation for automatic text contrast.
+- **Vanilla JavaScript (ES6+):** Non-blocking `Promise.all` data fetching with automatic CORS proxy fallbacks, timeout guards, and `localStorage` state persistence.
+- **ESPN Sports Endpoints:** Live JSON feeds for league standings, team metadata, club crests, and match schedules.
+
+---
+
+## 📝 Credits & Acknowledgments
+
+- **Live Match & Standings Data:** Powered by public sports data endpoints and club crest assets from [ESPN FC](https://www.espn.com/).
+- **Design & Development:** Created and maintained by **[Ritvik Girish](https://github.com/Ritvik-Girish)**.
+
+---
+
+<div align="center">
+  <sub>Built with clean code and football obsession. ⭐ Star this repo if you use it on your setup!</sub>
+</div>
