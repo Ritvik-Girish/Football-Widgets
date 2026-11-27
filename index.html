@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root {
+    --accent: #DA291C;
+    --accent-rgb: 218, 41, 28;
+    --accent-fg: #FFFFFF;
+    --league-glow-primary-rgb: 124, 58, 237;
+    --league-glow-secondary-rgb: 37, 99, 235;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  }
+
+  html, body {
+    background: transparent !important;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .widget {
+    position: relative;
+    --cursor-glow-opacity: 0;
+    width: 360px;
+    min-height: 282px;
+    padding: 18px;
+    border-radius: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 8px;
+    background:
+      radial-gradient(
+        circle 165px at var(--cursor-x, 50%) var(--cursor-y, 50%),
+        rgba(var(--accent-rgb), var(--cursor-glow-opacity)) 0%,
+        transparent 76%
+      ),
+      radial-gradient(ellipse 195px 170px at 0% 100%, rgba(var(--league-glow-primary-rgb), 0.24) 0%, transparent 72%),
+      radial-gradient(ellipse 165px 145px at 8% 95%, rgba(var(--league-glow-secondary-rgb), 0.18) 0%, transparent 75%),
+      linear-gradient(
+        145deg,
+        rgba(44, 44, 48, 0.44) 0%,
+        rgba(22, 22, 25, 0.52) 55%,
+        rgba(14, 14, 16, 0.58) 100%
+      );
+    backdrop-filter: blur(32px) saturate(160%);
+    -webkit-backdrop-filter: blur(32px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.24),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+    color: #F5F5F7;
+    overflow: hidden;
+  }
+
+  .widget::before {
+    content: "";
+    position: absolute;
+    top: -45px;
+    right: -45px;
+    width: 145px;
+    height: 145px;
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.28) 0%, transparent 70%);
+    transition: background 0.35s ease;
+    pointer-events: none;
+  }
+
+  .widget.cursor-active {
+    --cursor-glow-opacity: 0.14;
+  }
+
+  .confetti-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .confetti-piece {
+    position: absolute;
+    top: -10px;
+    width: 6px;
+    height: 9px;
+    border-radius: 1px;
+    background: #FFD54A;
+    box-shadow: 0 0 5px rgba(255, 213, 74, 0.6);
+    opacity: 0;
+    animation: gold-confetti-fall var(--duration) ease-out var(--delay) forwards;
+  }
+
+  @keyframes gold-confetti-fall {
+    0% { transform: translate3d(0, -12px, 0) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    100% {
+      transform: translate3d(var(--drift), var(--fall-distance), 0) rotate(var(--spin));
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .confetti-piece {
+      animation: none;
+    }
+  }
+
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    gap: 8px;
+    -webkit-app-region: drag;
+  }
+
+  .widget-top {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    -webkit-app-region: no-drag;
+  }
+
+  .leader-trophy {
+    display: none;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: #FFD54A;
+    opacity: 1;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65));
+  }
+
+  .leader-trophy.is-visible {
+    display: block;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    pointer-events: none;
+  }
+
+  .club-crest {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
+  }
+
+  .league-crest {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+    cursor: move;
+    pointer-events: auto;
+    -webkit-app-region: drag;
+    -webkit-user-drag: none;
+  }
+
+  .league-logo-fallback {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: 7px;
+    background: linear-gradient(135deg, rgba(var(--league-glow-primary-rgb), 0.95), rgba(var(--league-glow-secondary-rgb), 0.95));
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+    color: #FFFFFF;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+    cursor: move;
+    pointer-events: auto;
+    -webkit-app-region: drag;
+  }
+
+  .league-logo-fallback[hidden] {
+    display: none;
+  }
+
+  .club-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #FFFFFF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .rank-pill {
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--accent) 0%, rgba(var(--accent-rgb), 0.85) 100%);
+    box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.35);
+    font-size: 10.5px;
+    font-weight: 800;
+    color: var(--accent-fg);
+    white-space: nowrap;
+  }
+
+  .gear-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    color: #D4D4D8;
+    font-size: 12px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .gear-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: #FFFFFF;
+  }
+
+  .refresh-btn.is-refreshing {
+    background: rgba(var(--accent-rgb), 0.22);
+    border-color: rgba(var(--accent-rgb), 0.55);
+  }
+
+  .refresh-icon {
+    display: inline-block;
+  }
+
+  .refresh-btn.is-refreshing .refresh-icon {
+    animation: refresh-spin 0.8s linear infinite;
+  }
+
+  @keyframes refresh-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .refresh-btn.is-refreshing .refresh-icon {
+      animation: none;
+    }
+  }
+
+  .stat-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 14px;
+    margin-bottom: 0;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .section-heading {
+    color: #E4E4E7;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  }
+
+  .widget-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .stat-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: #FFFFFF;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+  }
+
+  .stat-lbl {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    color: #E4E4E7;
+    margin-top: 2px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  }
+
+  .fixtures {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .news-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .news-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 11px;
+    border-radius: 15px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .news-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .news-source {
+    color: #FF8999;
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .news-source.romano {
+    color: #93C5FD;
+  }
+
+  .news-date {
+    color: #B4B4BC;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+
+  .news-title {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  .news-empty {
+    color: #D4D4D8;
+    font-size: 10px;
+    padding: 4px 2px;
+  }
+
+  .fixture-pill {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 36px;
+    padding: 8px 14px 8px 10px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+  }
+
+  .opp-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .opp-logo {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .venue-badge {
+    font-size: 9.5px;
+    font-weight: 400;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.12);
+    color: #E4E4E7;
+  }
+
+  .venue-badge.home {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  .opp-name {
+    font-size: 12.5px;
+    font-weight: 400;
+    color: #FFFFFF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .kickoff {
+    font-size: 11px;
+    font-weight: 400;
+    color: #B4B4BC;
+    flex-shrink: 0;
+    margin-left: 6px;
+  }
+
+  .fixture-section .section-heading {
+    font-weight: 400;
+  }
+
+  .settings-drawer {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    padding: 20px;
+    border-radius: 32px;
+    background: rgba(16, 16, 20, 0.96);
+    backdrop-filter: blur(28px);
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .settings-drawer > * {
+    flex-shrink: 0;
+  }
+
+  .settings-drawer.open {
+    display: flex;
+  }
+
+  .drawer-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .drawer-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+  }
+
+  .credits-section {
+    align-items: center;
+    text-align: center;
+  }
+
+  .credits-copy {
+    color: #A1A1AA;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field-group label {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #A1A1AA;
+  }
+
+  .field-select {
+    width: 100%;
+    padding: 7px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 600;
+    outline: none;
+  }
+
+  .field-select option {
+    background: #18181B;
+    color: #FFFFFF;
+  }
+
+  .save-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    color: #111115;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+  }
+
+  .save-btn:hover {
+    background: #FFFFFF;
+  }
+
+  .save-btn:active {
+    transform: scale(0.99);
+  }
+
+  .widget button {
+    transition: background-color 0.2s ease, background-image 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  }
+
+  .widget button:hover {
+    background-image: radial-gradient(
+      circle at var(--button-x, 50%) var(--button-y, 50%),
+      rgba(var(--accent-rgb), 0.3) 0%,
+      rgba(var(--accent-rgb), 0.08) 55%,
+      transparent 100%
+    );
+    border-color: rgba(var(--accent-rgb), 0.48);
+    box-shadow: 0 2px 12px rgba(var(--accent-rgb), 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+</style>
+</head>
+<body>
+  <div class="widget" id="widget">
+    <div class="widget-top">
+      <div class="top-row">
+        <div class="brand">
+          <img id="league-logo" class="league-crest" src="" alt="" draggable="false" title="Drag to move widget" />
+          <span id="league-logo-fallback" class="league-logo-fallback" hidden aria-hidden="true"></span>
+          <img id="club-logo" class="club-crest" src="" alt="" />
+          <span class="club-name" id="club-name">Man Utd</span>
+        </div>
+
+        <div class="controls">
+          <svg id="leader-trophy" class="leader-trophy" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" title="League leader">
+            <path d="M7 3h10v2h4v3a5 5 0 0 1-4 4.9 5 5 0 0 1-3 2.9V19h4v2H6v-2h4v-3.2a5 5 0 0 1-3-2.9A5 5 0 0 1 3 8V5h4V3Zm0 4H5v1a3 3 0 0 0 2.1 2.9A7 7 0 0 1 7 8V7Zm10 0v1a7 7 0 0 1-.1 2.9A3 3 0 0 0 19 8V7h-2Z" />
+          </svg>
+          <div class="rank-pill" id="rank-pill">--</div>
+          <button id="refresh-btn" class="gear-btn refresh-btn" type="button" onclick="refreshWidget()" title="Refresh data and news" aria-label="Refresh data and news" aria-busy="false"><span class="refresh-icon" aria-hidden="true">↻</span></button>
+          <button class="gear-btn" onclick="toggleDrawer(true)" title="Change Team & League">⚙</button>
+        </div>
+      </div>
+
+      <div class="widget-section">
+        <div class="section-heading">Points Table</div>
+        <div class="stat-strip" id="stats">
+          <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">PLD</span></div>
+          <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">WIN</span></div>
+          <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">DRW</span></div>
+          <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">LST</span></div>
+          <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">GD</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="widget-section fixture-section">
+      <div class="section-heading">Upcoming Fixtures</div>
+      <div class="fixtures" id="fixtures"></div>
+    </div>
+
+    <div class="widget-section">
+      <div class="section-heading">Latest News Feed</div>
+      <div class="news-list" id="news-list"></div>
+    </div>
+
+    <!-- Settings Drawer -->
+    <div class="settings-drawer" id="drawer">
+      <div class="drawer-head">
+        <span class="drawer-title">Club & League</span>
+        <button class="gear-btn" onclick="toggleDrawer(false)">✕</button>
+      </div>
+
+      <div class="field-group">
+        <label>Domestic League</label>
+        <select class="field-select" id="league-select" onchange="loadLeagueTeams(this.value)">
+          <option value="eng.1">Premier League (ENG)</option>
+          <option value="esp.1">La Liga (ESP)</option>
+          <option value="ita.1">Serie A (ITA)</option>
+          <option value="ger.1">Bundesliga (GER)</option>
+          <option value="fra.1">Ligue 1 (FRA)</option>
+          <option value="usa.1">Major League Soccer (MLS)</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Club</label>
+        <select class="field-select" id="team-select"></select>
+      </div>
+
+      <div class="field-group">
+        <label for="timezone-select">Fixture Timezone</label>
+        <select class="field-select" id="timezone-select">
+          <option value="local">Device local time</option>
+          <option value="UTC">UTC</option>
+          <option value="America/Los_Angeles">Los Angeles (PT)</option>
+          <option value="America/Denver">Denver (MT)</option>
+          <option value="America/Chicago">Chicago (CT)</option>
+          <option value="America/New_York">New York (ET)</option>
+          <option value="America/Sao_Paulo">Sao Paulo (BRT)</option>
+          <option value="Europe/London">London (UK)</option>
+          <option value="Europe/Paris">Paris (CET)</option>
+          <option value="Europe/Berlin">Berlin (CET)</option>
+          <option value="Africa/Johannesburg">Johannesburg (SAST)</option>
+          <option value="Asia/Dubai">Dubai (GST)</option>
+          <option value="Asia/Kolkata">India (IST)</option>
+          <option value="Asia/Bangkok">Bangkok (ICT)</option>
+          <option value="Asia/Singapore">Singapore (SGT)</option>
+          <option value="Asia/Tokyo">Tokyo (JST)</option>
+          <option value="Australia/Sydney">Sydney (AET)</option>
+          <option value="Pacific/Auckland">Auckland (NZT)</option>
+        </select>
+      </div>
+
+      <button class="save-btn" onclick="applyClubSelection()">Apply Settings</button>
+      <div class="field-group credits-section">
+        <span class="credits-copy">Free forever, for the love of football</span>
+      </div>
+    </div>
+    <div id="confetti-layer" class="confetti-layer" aria-hidden="true"></div>
+  </div>
+
+<script>
+  const CONFIG_KEY = "universal_football_widget_cfg_v5";
+  const CACHE_KEY = "universal_football_widget_data_v1";
+  const NEWS_CACHE_KEY = "universal_football_widget_news_v1";
+  const TIME_ZONES = new Set([
+    "local", "UTC", "America/Los_Angeles", "America/Denver", "America/Chicago",
+    "America/New_York", "America/Sao_Paulo", "Europe/London", "Europe/Paris",
+    "Europe/Berlin", "Africa/Johannesburg", "Asia/Dubai", "Asia/Kolkata",
+    "Asia/Bangkok", "Asia/Singapore", "Asia/Tokyo", "Australia/Sydney",
+    "Pacific/Auckland"
+  ]);
+  const FIXED_TIME_ZONE_LABELS = {
+    UTC: "GMT",
+    "America/Sao_Paulo": "BRT",
+    "Africa/Johannesburg": "SAST",
+    "Asia/Dubai": "GST",
+    "Asia/Kolkata": "IST",
+    "Asia/Calcutta": "IST",
+    "Asia/Bangkok": "ICT",
+    "Asia/Singapore": "SGT",
+    "Asia/Tokyo": "JST"
+  };
+
+  const DEFAULT_NEWS = [
+    { title: "Barcelona's Alejandro Balde identified as concrete January left-back target for Man Utd", source: "FABRIZIO ROMANO · WIRE", url: "https://www.espn.in/football/team/_/id/360/manchester-united", published: "2026-11-25T05:00:00Z", isRumor: true, isRomano: true },
+    { title: "Pochettino & Man Utd board approve January transfer budget for new striker and left-back", source: "BOARD BRIEFING", url: "https://www.espn.in/football/team/_/id/360/manchester-united", published: "2026-11-24T20:21:00Z", isRumor: false, isRomano: false },
+    { title: "Nathan Collins & Calvin Bassey sit top of Pochettino's winter centre-back shortlist", source: "TRANSFER WIRE", url: "https://www.espn.in/football/team/_/id/360/manchester-united", published: "2026-11-24T18:15:00Z", isRumor: true, isRomano: false },
+    { title: "Man Utd escalate appeal against Leny Yoro red card ahead of Brentford clash", source: "CLUB OFFICIAL", url: "https://www.espn.in/football/team/_/id/360/manchester-united", published: "2026-11-24T16:00:00Z", isRumor: false, isRomano: false },
+    { title: "Monaco striker Folarin Balogun and Evanilson linked as Pochettino pushes for No. 9", source: "TRANSFER WIRE", url: "https://www.espn.in/football/team/_/id/360/manchester-united", published: "2026-11-24T14:40:00Z", isRumor: true, isRomano: false },
+    { title: "Man Utd 22-man squad vs Sporting CP confirmed in UEFA Champions League", source: "SQUAD UPDATE", url: "https://www.espn.in/football/team/_/id/360/manchester-united", published: "2026-11-24T12:30:00Z", isRumor: false, isRomano: false }
+  ];
+
+  const LEAGUES = {
+    "eng.1": { name: "Premier League", shortName: "PL", logo: "https://a.espncdn.com/i/leaguelogos/soccer/500/23.png", glow: ["#7C3AED", "#2563EB"] },
+    "esp.1": { name: "La Liga", shortName: "LL", logo: "https://a.espncdn.com/i/leaguelogos/soccer/500/15.png", glow: ["#EF3340", "#FF7A00"] },
+    "ita.1": { name: "Serie A", shortName: "SA", logo: "https://a.espncdn.com/i/leaguelogos/soccer/500/12.png", glow: ["#38BDF8", "#123B78"] },
+    "ger.1": { name: "Bundesliga", shortName: "BL", logo: "https://a.espncdn.com/i/leaguelogos/soccer/500/10.png", glow: ["#E30613", "#171717"] },
+    "fra.1": { name: "Ligue 1", shortName: "L1", logo: "https://a.espncdn.com/i/leaguelogos/soccer/500/9.png", glow: ["#06B6D4", "#EC4899"] },
+    "usa.1": { name: "Major League Soccer", shortName: "MLS", logo: "https://a.espncdn.com/i/leaguelogos/soccer/500/19.png", glow: ["#111827", "#D71920"] }
+  };
+
+  const WHITE_KIT_OVERRIDES = {
+    "86": "#00529F",
+    "357": "#1D428A",
+    "94": "#FF6600",
+    "243": "#D4021D",
+    "367": "#132257",
+    "370": "#111111",
+    "111": "#111111",
+    "118": "#111111",
+    "126": "#111111",
+    "172": "#0055A4",
+    "7868": "#111111"
+  };
+
+  const BUILTIN_TEAMS = {
+    "eng.1": [
+      { id: "359", displayName: "Arsenal", shortDisplayName: "Arsenal", color: "#EF0107" },
+      { id: "362", displayName: "Aston Villa", shortDisplayName: "Aston Villa", color: "#670E36" },
+      { id: "349", displayName: "AFC Bournemouth", shortDisplayName: "Bournemouth", color: "#DA291C" },
+      { id: "337", displayName: "Brentford", shortDisplayName: "Brentford", color: "#E30613" },
+      { id: "331", displayName: "Brighton & Hove Albion", shortDisplayName: "Brighton", color: "#0057B8" },
+      { id: "379", displayName: "Burnley", shortDisplayName: "Burnley", color: "#6C1D45" },
+      { id: "363", displayName: "Chelsea", shortDisplayName: "Chelsea", color: "#034694" },
+      { id: "384", displayName: "Crystal Palace", shortDisplayName: "Crystal Palace", color: "#1B458F" },
+      { id: "368", displayName: "Everton", shortDisplayName: "Everton", color: "#003399" },
+      { id: "370", displayName: "Fulham", shortDisplayName: "Fulham", color: "#111111" },
+      { id: "357", displayName: "Leeds United", shortDisplayName: "Leeds", color: "#1D428A" },
+      { id: "364", displayName: "Liverpool", shortDisplayName: "Liverpool", color: "#C8102E" },
+      { id: "382", displayName: "Manchester City", shortDisplayName: "Man City", color: "#6CABDD" },
+      { id: "360", displayName: "Manchester United", shortDisplayName: "Man Utd", color: "#DA291C" },
+      { id: "361", displayName: "Newcastle United", shortDisplayName: "Newcastle", color: "#241F20" },
+      { id: "393", displayName: "Nottingham Forest", shortDisplayName: "Nottm Forest", color: "#DD0000" },
+      { id: "366", displayName: "Sunderland", shortDisplayName: "Sunderland", color: "#EB172B" },
+      { id: "367", displayName: "Tottenham Hotspur", shortDisplayName: "Tottenham", color: "#132257" },
+      { id: "371", displayName: "West Ham United", shortDisplayName: "West Ham", color: "#7A263A" },
+      { id: "380", displayName: "Wolverhampton Wanderers", shortDisplayName: "Wolves", color: "#FDB913" }
+    ],
+    "esp.1": [
+      { id: "96", displayName: "Alavés", shortDisplayName: "Alavés", color: "#00529F" },
+      { id: "93", displayName: "Athletic Club", shortDisplayName: "Athletic Club", color: "#EE2523" },
+      { id: "1068", displayName: "Atlético Madrid", shortDisplayName: "Atlético", color: "#CB3524" },
+      { id: "83", displayName: "Barcelona", shortDisplayName: "Barcelona", color: "#A50044" },
+      { id: "85", displayName: "Celta Vigo", shortDisplayName: "Celta Vigo", color: "#8AC3EE" },
+      { id: "3751", displayName: "Elche", shortDisplayName: "Elche", color: "#007A33" },
+      { id: "88", displayName: "Espanyol", shortDisplayName: "Espanyol", color: "#007FC8" },
+      { id: "2922", displayName: "Getafe", shortDisplayName: "Getafe", color: "#005999" },
+      { id: "9812", displayName: "Girona", shortDisplayName: "Girona", color: "#CD2534" },
+      { id: "1538", displayName: "Levante", shortDisplayName: "Levante", color: "#005CA9" },
+      { id: "84", displayName: "Mallorca", shortDisplayName: "Mallorca", color: "#E20613" },
+      { id: "97", displayName: "Osasuna", shortDisplayName: "Osasuna", color: "#D91A21" },
+      { id: "101", displayName: "Rayo Vallecano", shortDisplayName: "Rayo", color: "#E53027" },
+      { id: "244", displayName: "Real Betis", shortDisplayName: "Real Betis", color: "#0BB363" },
+      { id: "86", displayName: "Real Madrid", shortDisplayName: "Real Madrid", color: "#00529F" },
+      { id: "92", displayName: "Real Oviedo", shortDisplayName: "Real Oviedo", color: "#00529F" },
+      { id: "89", displayName: "Real Sociedad", shortDisplayName: "Real Sociedad", color: "#0067B1" },
+      { id: "243", displayName: "Sevilla", shortDisplayName: "Sevilla", color: "#D4021D" },
+      { id: "94", displayName: "Valencia", shortDisplayName: "Valencia", color: "#FF6600" },
+      { id: "102", displayName: "Villarreal", shortDisplayName: "Villarreal", color: "#FFE667" }
+    ],
+    "ita.1": [
+      { id: "103", displayName: "AC Milan", shortDisplayName: "AC Milan", color: "#FB090B" },
+      { id: "104", displayName: "AS Roma", shortDisplayName: "AS Roma", color: "#8E1F2F" },
+      { id: "105", displayName: "Atalanta", shortDisplayName: "Atalanta", color: "#1E71B8" },
+      { id: "107", displayName: "Bologna", shortDisplayName: "Bologna", color: "#1A2F48" },
+      { id: "2925", displayName: "Cagliari", shortDisplayName: "Cagliari", color: "#A50034" },
+      { id: "2572", displayName: "Como", shortDisplayName: "Como", color: "#0054A6" },
+      { id: "4050", displayName: "Cremonese", shortDisplayName: "Cremonese", color: "#D71920" },
+      { id: "109", displayName: "Fiorentina", shortDisplayName: "Fiorentina", color: "#482E92" },
+      { id: "3263", displayName: "Genoa", shortDisplayName: "Genoa", color: "#AD1919" },
+      { id: "119", displayName: "Hellas Verona", shortDisplayName: "Verona", color: "#003399" },
+      { id: "110", displayName: "Inter Milan", shortDisplayName: "Inter", color: "#010E80" },
+      { id: "111", displayName: "Juventus", shortDisplayName: "Juventus", color: "#111111" },
+      { id: "112", displayName: "Lazio", shortDisplayName: "Lazio", color: "#87D8F7" },
+      { id: "113", displayName: "Lecce", shortDisplayName: "Lecce", color: "#E30613" },
+      { id: "114", displayName: "Napoli", shortDisplayName: "Napoli", color: "#12A0D7" },
+      { id: "115", displayName: "Parma", shortDisplayName: "Parma", color: "#FFDD00" },
+      { id: "3956", displayName: "Pisa", shortDisplayName: "Pisa", color: "#0054A6" },
+      { id: "3997", displayName: "Sassuolo", shortDisplayName: "Sassuolo", color: "#00A752" },
+      { id: "239", displayName: "Torino", shortDisplayName: "Torino", color: "#8A1E03" },
+      { id: "118", displayName: "Udinese", shortDisplayName: "Udinese", color: "#111111" }
+    ],
+    "ger.1": [
+      { id: "3841", displayName: "FC Augsburg", shortDisplayName: "Augsburg", color: "#BA3733" },
+      { id: "131", displayName: "Bayer Leverkusen", shortDisplayName: "Leverkusen", color: "#E32221" },
+      { id: "132", displayName: "Bayern Munich", shortDisplayName: "Bayern", color: "#DC052D" },
+      { id: "124", displayName: "Borussia Dortmund", shortDisplayName: "Dortmund", color: "#FDE100" },
+      { id: "268", displayName: "Borussia Mönchengladbach", shortDisplayName: "Gladbach", color: "#111111" },
+      { id: "122", displayName: "1. FC Köln", shortDisplayName: "Köln", color: "#ED1C24" },
+      { id: "125", displayName: "Eintracht Frankfurt", shortDisplayName: "Frankfurt", color: "#E1000F" },
+      { id: "126", displayName: "SC Freiburg", shortDisplayName: "Freiburg", color: "#111111" },
+      { id: "127", displayName: "Hamburger SV", shortDisplayName: "Hamburg", color: "#005CA9" },
+      { id: "6418", displayName: "1. FC Heidenheim", shortDisplayName: "Heidenheim", color: "#E2001A" },
+      { id: "7911", displayName: "TSG Hoffenheim", shortDisplayName: "Hoffenheim", color: "#1C63B7" },
+      { id: "2950", displayName: "Mainz 05", shortDisplayName: "Mainz", color: "#C3141E" },
+      { id: "11420", displayName: "RB Leipzig", shortDisplayName: "RB Leipzig", color: "#DD0741" },
+      { id: "270", displayName: "FC St. Pauli", shortDisplayName: "St. Pauli", color: "#623B2A" },
+      { id: "134", displayName: "VfB Stuttgart", shortDisplayName: "Stuttgart", color: "#E32219" },
+      { id: "598", displayName: "Union Berlin", shortDisplayName: "Union Berlin", color: "#EB1923" },
+      { id: "137", displayName: "Werder Bremen", shortDisplayName: "Bremen", color: "#1D9053" },
+      { id: "138", displayName: "VfL Wolfsburg", shortDisplayName: "Wolfsburg", color: "#65B32E" }
+    ],
+    "fra.1": [
+      { id: "7868", displayName: "Angers", shortDisplayName: "Angers", color: "#111111" },
+      { id: "174", displayName: "AS Monaco", shortDisplayName: "Monaco", color: "#E51B24" },
+      { id: "172", displayName: "Auxerre", shortDisplayName: "Auxerre", color: "#0055A4" },
+      { id: "6997", displayName: "Brest", shortDisplayName: "Brest", color: "#E2001A" },
+      { id: "3236", displayName: "Le Havre", shortDisplayName: "Le Havre", color: "#87CEFA" },
+      { id: "175", displayName: "RC Lens", shortDisplayName: "Lens", color: "#EC1C24" },
+      { id: "166", displayName: "Lille", shortDisplayName: "Lille", color: "#E01E13" },
+      { id: "273", displayName: "Lorient", shortDisplayName: "Lorient", color: "#F47920" },
+      { id: "167", displayName: "Lyon", shortDisplayName: "Lyon", color: "#1B3E8F" },
+      { id: "176", displayName: "Marseille", shortDisplayName: "Marseille", color: "#2FAEE0" },
+      { id: "177", displayName: "Metz", shortDisplayName: "Metz", color: "#7B1E3A" },
+      { id: "165", displayName: "Nantes", shortDisplayName: "Nantes", color: "#FFED00" },
+      { id: "2502", displayName: "Nice", shortDisplayName: "Nice", color: "#D4001A" },
+      { id: "6851", displayName: "Paris FC", shortDisplayName: "Paris FC", color: "#003399" },
+      { id: "160", displayName: "Paris Saint-Germain", shortDisplayName: "PSG", color: "#004170" },
+      { id: "169", displayName: "Rennes", shortDisplayName: "Rennes", color: "#E30613" },
+      { id: "180", displayName: "Strasbourg", shortDisplayName: "Strasbourg", color: "#009FE3" },
+      { id: "179", displayName: "Toulouse", shortDisplayName: "Toulouse", color: "#5B2B82" }
+    ]
+  };
+
+  let config = {
+    league: "eng.1",
+    teamId: "360",
+    teamName: "Manchester United",
+    shortName: "Man Utd",
+    color: "#DA291C",
+    timeZone: "Asia/Kolkata"
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  try {
+    const savedCfg = JSON.parse(localStorage.getItem(CONFIG_KEY));
+    if (savedCfg?.teamId) config = { ...config, ...savedCfg };
+  } catch (_) {}
+  if (!TIME_ZONES.has(config.timeZone)) config.timeZone = "Asia/Kolkata";
+
+  if (params.get("league") && LEAGUES[params.get("league")]) {
+    config.league = params.get("league");
+  }
+  if (params.get("team")) {
+    config.teamId = params.get("team");
+    const matched = (BUILTIN_TEAMS[config.league] || []).find(t => String(t.id) === String(config.teamId));
+    if (matched) {
+      config.teamName = matched.displayName;
+      config.shortName = matched.shortDisplayName;
+      config.color = matched.color;
+    }
+  }
+
+  let teamsListCache = BUILTIN_TEAMS[config.league] || [];
+  let state = {
+    standing: null,
+    matches: [],
+    loading: true,
+    fixtureSourceFailed: false
+  };
+
+  // Load cached data immediately if available for this team
+  try {
+    const cached = JSON.parse(localStorage.getItem(`${CACHE_KEY}_${config.league}_${config.teamId}`));
+    if (cached) {
+      state.standing = cached.standing || null;
+      const recentCutoff = Date.now() - 2 * 3600 * 1000;
+      state.matches = (cached.matches || []).filter(match => {
+        const timestamp = new Date(match?.utcDate).getTime();
+        return Number.isFinite(timestamp) && timestamp > recentCutoff;
+      });
+    }
+  } catch (_) {}
+
+  let newsItems = [];
+  let activeRefreshTasks = 0;
+  let latestDataRequest = 0;
+
+  function updateRefreshButton() {
+    const button = document.getElementById("refresh-btn");
+    if (!button) return;
+    const refreshing = activeRefreshTasks > 0;
+    const label = refreshing ? "Refreshing data and news" : "Refresh data and news";
+    button.classList.toggle("is-refreshing", refreshing);
+    button.setAttribute("aria-busy", String(refreshing));
+    button.setAttribute("aria-label", label);
+    button.title = label;
+  }
+
+  function beginRefreshTask() {
+    activeRefreshTasks += 1;
+    updateRefreshButton();
+  }
+
+  function endRefreshTask() {
+    activeRefreshTasks = Math.max(0, activeRefreshTasks - 1);
+    updateRefreshButton();
+  }
+
+  function getNewsCacheKey() {
+    return `${NEWS_CACHE_KEY}_${config.league}_${config.teamId}`;
+  }
+
+  function loadNewsCache() {
+    newsItems = config.teamId === "360" ? [...DEFAULT_NEWS] : [];
+    try {
+      const saved = JSON.parse(localStorage.getItem(getNewsCacheKey()));
+      const teamTerms = [config.teamName, config.shortName]
+        .filter(Boolean)
+        .map(term => term.toLowerCase());
+      const relevantSaved = Array.isArray(saved) ? saved.filter(item => {
+        if (String(item?.teamId || "") === String(config.teamId) && item?.teamTagged === true) return true;
+        const title = String(item?.title || "").toLowerCase();
+        return teamTerms.some(term => term.length > 2 && title.includes(term));
+      }) : [];
+      if (relevantSaved.length > 0) {
+        newsItems = relevantSaved;
+      } else if (config.teamId === "360") {
+        const legacy = JSON.parse(localStorage.getItem("mu_transfer_widget_v4"));
+        if (legacy?.deals?.length || legacy?.rumors?.length) {
+          newsItems = [
+            ...(legacy.deals || []).map(item => ({ ...item, isRumor: false })),
+            ...(legacy.rumors || []).map(item => ({ ...item, isRumor: true }))
+          ];
+        }
+      }
+    } catch (_) {}
+    renderNews();
+  }
+
+  loadNewsCache();
+
+  function parseRgb(hex) {
+    const clean = (hex || "#DA291C").replace("#", "");
+    const full = clean.length === 3 ? clean.split("").map(c => c + c).join("") : clean;
+    const num = parseInt(full, 16);
+    if (isNaN(num)) return { r: 218, g: 41, b: 28 };
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  }
+
+  function resolveReadableColor(teamId, rawHex, altHex) {
+    if (WHITE_KIT_OVERRIDES[String(teamId)]) {
+      return WHITE_KIT_OVERRIDES[String(teamId)];
+    }
+    let hex = rawHex ? (rawHex.startsWith("#") ? rawHex : `#${rawHex}`) : "#DA291C";
+    const { r, g, b } = parseRgb(hex);
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+
+    if (yiq > 235) {
+      if (altHex) {
+        const alt = altHex.startsWith("#") ? altHex : `#${altHex}`;
+        const altRgb = parseRgb(alt);
+        const altYiq = (altRgb.r * 299 + altRgb.g * 587 + altRgb.b * 114) / 1000;
+        if (altYiq <= 235) return alt;
+      }
+      return "#1E293B";
+    }
+    return hex;
+  }
+
+  function applyTheme() {
+    const safeHex = resolveReadableColor(config.teamId, config.color, config.altColor);
+    const { r, g, b } = parseRgb(safeHex);
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    const fgColor = yiq >= 165 ? "#111115" : "#FFFFFF";
+
+    document.documentElement.style.setProperty("--accent", safeHex);
+    document.documentElement.style.setProperty("--accent-rgb", `${r}, ${g}, ${b}`);
+    document.documentElement.style.setProperty("--accent-fg", fgColor);
+
+    document.getElementById("club-name").textContent = config.shortName;
+    document.getElementById("club-logo").src = `https://a.espncdn.com/i/teamlogos/soccer/500/${config.teamId}.png`;
+    const league = LEAGUES[config.league];
+    const [primaryGlow, secondaryGlow] = league?.glow || ["#7C3AED", "#2563EB"];
+    const primaryRgb = parseRgb(primaryGlow);
+    const secondaryRgb = parseRgb(secondaryGlow);
+    document.documentElement.style.setProperty("--league-glow-primary-rgb", `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
+    document.documentElement.style.setProperty("--league-glow-secondary-rgb", `${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}`);
+    const leagueLogo = document.getElementById("league-logo");
+    const leagueLogoFallback = document.getElementById("league-logo-fallback");
+    leagueLogo.onerror = () => {
+      leagueLogo.hidden = true;
+      leagueLogoFallback.textContent = league?.shortName || "FC";
+      leagueLogoFallback.hidden = false;
+      leagueLogoFallback.setAttribute("aria-label", `${league?.name || "League"} logo`);
+      leagueLogoFallback.setAttribute("role", "img");
+      leagueLogoFallback.removeAttribute("aria-hidden");
+    };
+    leagueLogo.onload = () => {
+      leagueLogo.hidden = false;
+      leagueLogoFallback.hidden = true;
+      leagueLogoFallback.setAttribute("aria-hidden", "true");
+      leagueLogoFallback.removeAttribute("role");
+      leagueLogoFallback.removeAttribute("aria-label");
+    };
+    leagueLogo.hidden = false;
+    leagueLogoFallback.hidden = true;
+    leagueLogo.src = league?.logo || "";
+    leagueLogo.alt = league?.name ? `${league.name} logo` : "League logo";
+    leagueLogo.title = league?.name || "League";
+  }
+
+  async function fetchWithTimeout(url, ms = 6000, asText = false) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      // No custom headers or cache modes -> avoids CORS OPTIONS preflight!
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) return null;
+      return asText ? await res.text() : await res.json();
+    } catch (_) {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function parseJinaJSON(text) {
+    if (typeof text !== "string") return null;
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start < 0 || end < start) return null;
+    try {
+      const data = JSON.parse(text.slice(start, end + 1));
+      return data && typeof data === "object" ? data : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function corsJSON(url) {
+    const bustUrl = `${url}${url.includes("?") ? "&" : "?"}_t=${Math.floor(Date.now() / 60000)}`;
+    const candidates = [
+      { url: bustUrl },
+      { url: bustUrl.replace("site.api.espn.com", "site.web.api.espn.com") },
+      { url: `https://r.jina.ai/http://${bustUrl.replace(/^https?:\/\//, "")}`, asText: true }
+    ];
+
+    for (const candidate of candidates) {
+      const result = await fetchWithTimeout(candidate.url, 8000, candidate.asText);
+      const data = candidate.asText ? parseJinaJSON(result) : result;
+      if (data && typeof data === "object") return data;
+    }
+    return null;
+  }
+
+  async function corsText(url) {
+    const bustUrl = `${url}${url.includes("?") ? "&" : "?"}_t=${Math.floor(Date.now() / 60000)}`;
+    const candidates = [
+      bustUrl,
+      bustUrl.replace("site.api.espn.com", "site.web.api.espn.com"),
+      "https://corsproxy.io/?" + encodeURIComponent(bustUrl),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(bustUrl)
+    ];
+
+    for (const target of candidates) {
+      const text = await fetchWithTimeout(target, 5500, true);
+      if (typeof text === "string" && text.length > 0) return text;
+    }
+    return null;
+  }
+
+  function formatNewsDate(dateStr) {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "Recent";
+    const datePart = date.toLocaleDateString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "numeric",
+      month: "short"
+    });
+    const diffMs = Date.now() - date.getTime();
+    if (diffMs < 0) return datePart;
+    const hours = Math.floor(diffMs / 3600000);
+    if (hours < 1) return `${datePart} · Just now`;
+    if (hours < 24) return `${datePart} · ${hours}h ago`;
+    return `${datePart} · ${Math.floor(hours / 24)}d ago`;
+  }
+
+  function renderNews() {
+    const container = document.getElementById("news-list");
+    const latest = [...newsItems]
+      .filter(item => item && typeof item.title === "string" && item.title.trim())
+      .sort((a, b) => new Date(b.published).getTime() - new Date(a.published).getTime())
+      .slice(0, 2);
+
+    if (latest.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "news-empty";
+      empty.textContent = "No recent deals or rumors";
+      container.replaceChildren(empty);
+      return;
+    }
+
+    container.replaceChildren(...latest.map(item => {
+      const card = document.createElement("a");
+      card.className = "news-card";
+      card.target = "_blank";
+      card.rel = "noopener noreferrer";
+      try {
+        const url = new URL(item.url);
+        card.href = url.protocol === "https:" ? url.href : "https://www.espn.com/soccer/";
+      } catch (_) {
+        card.href = "https://www.espn.com/soccer/";
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "news-meta";
+      const source = document.createElement("span");
+      source.className = `news-source${item.isRomano ? " romano" : ""}`;
+      source.textContent = item.source || (item.isRumor ? "TRANSFER RUMOR" : "TRANSFER NEWS");
+      const date = document.createElement("span");
+      date.className = "news-date";
+      date.textContent = formatNewsDate(item.published);
+      meta.append(source, date);
+
+      const title = document.createElement("span");
+      title.className = "news-title";
+      title.textContent = item.title;
+      card.append(meta, title);
+      return card;
+    }));
+  }
+
+  function fetchNews() {
+    beginRefreshTask();
+    return fetchNewsData().finally(endRefreshTask);
+  }
+
+  async function fetchNewsData() {
+    const selected = {
+      league: config.league,
+      teamId: String(config.teamId),
+      teamName: config.teamName || config.shortName,
+      shortName: config.shortName
+    };
+    const query = encodeURIComponent(`"Fabrizio Romano" "${selected.teamName}" transfer`);
+    const [leagueNews, soccerNews, rumorFeed] = await Promise.all([
+      corsJSON(`https://site.api.espn.com/apis/site/v2/sports/soccer/${selected.league}/news?limit=50`),
+      corsJSON("https://site.api.espn.com/apis/site/v2/sports/soccer/all/news?limit=50"),
+      corsText(`https://news.google.com/rss/search?q=${query}&hl=en-GB&gl=GB&ceid=GB:en`)
+    ]);
+
+    if (config.league !== selected.league || String(config.teamId) !== selected.teamId) return;
+
+    const terms = [selected.teamName, selected.shortName]
+      .filter(Boolean)
+      .map(term => term.toLowerCase());
+    const transferPattern = /\b(transfer|signing|signs|signed|deal|bid|offer|target|linked|rumou?r|negotiat\w*|interest|loan|contract|agreed|agrees|joins|joined|exit|shortlist|release clause)\b/i;
+    const rumorPattern = /\b(rumou?r|target|linked|interest|negotiat\w*|bid|offer|monitor\w*|shortlist|eyeing|wants|talks|consider\w*)\b/i;
+    const officialPattern = /\b(official|confirmed|signs|signed|completes|completed|announces|announced|agrees|agreed|joins|joined|extends|extension)\b/i;
+    const byTitle = new Map();
+    const hasTeamMention = text => terms.some(term => term.length > 2 && text.toLowerCase().includes(term));
+
+    const addNews = item => {
+      const key = item.title.trim().toLowerCase();
+      if (!key || byTitle.has(key)) return;
+      byTitle.set(key, {
+        ...item,
+        teamId: selected.teamId,
+        teamTagged: item.teamTagged === true
+      });
+    };
+
+    for (const data of [leagueNews, soccerNews]) {
+      for (const article of data?.articles || []) {
+        const headline = article?.headline || "";
+        const summary = `${headline} ${article?.description || ""}`;
+        if (!headline || !transferPattern.test(summary)) continue;
+        const taggedForTeam = (article.categories || [])
+          .some(category => String(category.teamId) === selected.teamId);
+        if (!taggedForTeam && !hasTeamMention(headline)) continue;
+
+        const isRomano = /romano/i.test(`${headline} ${article.description || ""}`);
+        const isRumor = rumorPattern.test(summary) && !officialPattern.test(headline);
+        addNews({
+          title: headline,
+          source: isRomano ? "FABRIZIO ROMANO · ESPN" : "ESPN FC",
+          url: article.links?.web?.href || "https://www.espn.com/soccer/",
+          published: article.published || new Date().toISOString(),
+          isRumor,
+          isRomano,
+          teamTagged: taggedForTeam
+        });
+      }
+    }
+
+    if (rumorFeed) {
+      const xml = new DOMParser().parseFromString(rumorFeed, "text/xml");
+      if (!xml.querySelector("parsererror")) {
+        for (const node of Array.from(xml.querySelectorAll("item")).slice(0, 10)) {
+          const rawTitle = node.querySelector("title")?.textContent || "";
+          const outlet = rawTitle.match(/\s-\s([^-]+)$/);
+          const title = rawTitle.replace(/\s-\s[^-]+$/, "").trim();
+          if (!title || !transferPattern.test(title)) continue;
+          if (!hasTeamMention(title)) continue;
+          addNews({
+            title,
+            source: `FABRIZIO ROMANO${outlet ? ` · ${outlet[1].trim()}` : ""}`,
+            url: node.querySelector("link")?.textContent || "https://www.espn.com/soccer/",
+            published: node.querySelector("pubDate")?.textContent || new Date().toISOString(),
+            isRumor: true,
+            isRomano: true
+          });
+        }
+      }
+    }
+
+    const latest = [...byTitle.values()]
+      .sort((a, b) => new Date(b.published).getTime() - new Date(a.published).getTime());
+    if (latest.length > 0) {
+      newsItems = latest.slice(0, 12);
+      try { localStorage.setItem(getNewsCacheKey(), JSON.stringify(newsItems)); } catch (_) {}
+    }
+    renderNews();
+  }
+
+  function renderTeamOptions(list) {
+    const select = document.getElementById("team-select");
+    select.innerHTML = list.map(t =>
+      `<option value="${t.id}" ${String(t.id) === String(config.teamId) ? "selected" : ""}>${t.displayName}</option>`
+    ).join("");
+  }
+
+  async function loadLeagueTeams(leagueSlug) {
+    teamsListCache = [...(BUILTIN_TEAMS[leagueSlug] || [])];
+    renderTeamOptions(teamsListCache);
+
+    const data = await corsJSON(`https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueSlug}/teams?limit=50`);
+    const rawTeams = data?.sports?.[0]?.leagues?.[0]?.teams || [];
+    if (rawTeams.length > 0) {
+      teamsListCache = rawTeams
+        .map(t => t.team)
+        .sort((a, b) => a.displayName.localeCompare(b.displayName));
+      renderTeamOptions(teamsListCache);
+    }
+  }
+
+  function toggleDrawer(open) {
+    const drawer = document.getElementById("drawer");
+    drawer.classList.toggle("open", open);
+    if (open) {
+      document.getElementById("league-select").value = config.league;
+      document.getElementById("timezone-select").value = config.timeZone;
+      loadLeagueTeams(config.league);
+    }
+  }
+
+  function applyClubSelection() {
+    const leagueSlug = document.getElementById("league-select").value;
+    const teamId = document.getElementById("team-select").value;
+    const timeZone = document.getElementById("timezone-select").value;
+    const chosen = teamsListCache.find(t => String(t.id) === String(teamId));
+    const leagueChanged = leagueSlug !== config.league;
+    const teamChanged = String(teamId) !== String(config.teamId);
+
+    config.league = leagueSlug;
+    config.teamId = String(teamId);
+    config.timeZone = TIME_ZONES.has(timeZone) ? timeZone : "Asia/Kolkata";
+
+    if (chosen) {
+      config.teamName = chosen.displayName;
+      config.shortName = chosen.shortDisplayName || chosen.name;
+      config.color = chosen.color || "#DA291C";
+      config.altColor = chosen.alternateColor || "";
+    }
+
+    try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch (_) {}
+    toggleDrawer(false);
+    if (leagueChanged || teamChanged) {
+      state = { standing: null, matches: [], loading: true, fixtureSourceFailed: false };
+      applyTheme();
+      loadNewsCache();
+      fetchAllData();
+      fetchNews();
+    } else {
+      renderView();
+    }
+  }
+
+  function parseStandings(data) {
+    const entries = (data?.children || []).flatMap(group => group?.standings?.entries || []);
+    const team = entries.find(e => String(e.team?.id) === String(config.teamId));
+    if (!team) return null;
+    const stat = (n) => team.stats?.find(s => s.name === n)?.value ?? 0;
+    return {
+      pos: stat("rank"),
+      pts: stat("points"),
+      pld: stat("gamesPlayed"),
+      win: stat("wins"),
+      drw: stat("ties"),
+      lst: stat("losses"),
+      gd: stat("pointDifferential")
+    };
+  }
+
+  function normalizeEventCollection(value) {
+    if (Array.isArray(value)) return value.flatMap(normalizeEventCollection);
+    if (value && typeof value === "object") {
+      if (value.competitions || value.date) return [value];
+      return ["events", "items", "nextEvent"]
+        .flatMap(key => normalizeEventCollection(value[key]));
+    }
+    return [];
+  }
+
+  function getEventCompetitors(event) {
+    const competition = Array.isArray(event?.competitions)
+      ? event.competitions[0]
+      : event?.competitions;
+    return {
+      date: event?.date || competition?.date,
+      competitors: competition?.competitors || event?.competitors || []
+    };
+  }
+
+  function isConfiguredTeam(competitor) {
+    const id = String(competitor?.team?.id || competitor?.team?.uid || competitor?.id || "");
+    return id === String(config.teamId) || id.endsWith(`~t:${config.teamId}`);
+  }
+
+  function extractEvents(events) {
+    const now = Date.now() - 2 * 3600 * 1000;
+    const seen = new Set();
+    return (Array.isArray(events) ? events : [])
+      .filter(ev => {
+        if (!ev) return false;
+        const { date, competitors } = getEventCompetitors(ev);
+        const eventDate = date;
+        const timestamp = new Date(eventDate).getTime();
+        if (!Number.isFinite(timestamp) || timestamp <= now || ev.status?.type?.completed === true) return false;
+        if (competitors.length < 2) return false;
+        const involvesUs = competitors.some(isConfiguredTeam);
+        if (!involvesUs) return false;
+        const eventKey = ev.id || `${eventDate}-${competitors.map(c => c.team?.id || c.team?.uid || c.id || "").join("-")}`;
+        if (seen.has(eventKey)) return false;
+        seen.add(eventKey);
+        return true;
+      })
+      .sort((a, b) => new Date(getEventCompetitors(a).date) - new Date(getEventCompetitors(b).date))
+      .map(ev => {
+        const { date, competitors } = getEventCompetitors(ev);
+        const us = competitors.find(isConfiguredTeam);
+        const opp = competitors.find(c => !isConfiguredTeam(c));
+        const oppId = opp?.team?.id || opp?.id;
+        const apiLogo = opp?.team?.logos?.[0]?.href || opp?.team?.logo;
+        return {
+          isHome: us?.homeAway === "home",
+          opponent: opp?.team?.shortDisplayName || opp?.team?.displayName || opp?.shortDisplayName || opp?.displayName || "TBD",
+          badge: apiLogo || (oppId ? `https://a.espncdn.com/i/teamlogos/soccer/500/${oppId}.png` : ""),
+          utcDate: date
+        };
+      });
+  }
+
+  function getDateRangeParam() {
+    const start = new Date();
+    const end = new Date(Date.now() + 35 * 24 * 3600 * 1000);
+    const fmt = (d) => d.toISOString().slice(0, 10).replace(/-/g, "");
+    return `${fmt(start)}-${fmt(end)}`;
+  }
+
+  function formatFixtureTime(iso) {
+    const dt = new Date(iso);
+    if (isNaN(dt.getTime())) return "TBD";
+    const timeZone = config.timeZone === "local"
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : config.timeZone;
+    const dateTime = new Intl.DateTimeFormat("en-IN", {
+      timeZone,
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23"
+    }).format(dt);
+    const localizedName = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "short"
+    }).formatToParts(dt).find(part => part.type === "timeZoneName")?.value;
+    const abbreviation = localizedName?.startsWith("GMT+") || localizedName?.startsWith("GMT-")
+      ? FIXED_TIME_ZONE_LABELS[timeZone] || "GMT"
+      : localizedName || FIXED_TIME_ZONE_LABELS[timeZone] || "GMT";
+    return `${dateTime} ${abbreviation}`;
+  }
+
+  function renderView() {
+    const s = state.standing;
+    const isLeagueLeader = Number(s?.pos) === 1;
+    document.getElementById("leader-trophy").classList.toggle("is-visible", isLeagueLeader);
+
+    if (s) {
+      const gd = s.gd > 0 ? `+${s.gd}` : s.gd;
+      document.getElementById("rank-pill").textContent = `#${s.pos} • ${s.pts} PTS`;
+      document.getElementById("stats").innerHTML = `
+        <div class="stat-item"><span class="stat-val">${s.pld}</span><span class="stat-lbl">PLD</span></div>
+        <div class="stat-item"><span class="stat-val">${s.win}</span><span class="stat-lbl">WIN</span></div>
+        <div class="stat-item"><span class="stat-val">${s.drw}</span><span class="stat-lbl">DRW</span></div>
+        <div class="stat-item"><span class="stat-val">${s.lst}</span><span class="stat-lbl">LST</span></div>
+        <div class="stat-item"><span class="stat-val">${gd}</span><span class="stat-lbl">GD</span></div>
+      `;
+    } else {
+      document.getElementById("rank-pill").textContent = state.loading ? "SYNCING" : "RETRY";
+      document.getElementById("stats").innerHTML = `
+        <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">PLD</span></div>
+        <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">WIN</span></div>
+        <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">DRW</span></div>
+        <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">LST</span></div>
+        <div class="stat-item"><span class="stat-val">-</span><span class="stat-lbl">GD</span></div>
+      `;
+    }
+
+    const upcoming = state.matches.slice(0, 3);
+    const emptyFixtureText = state.loading
+      ? "Loading fixtures..."
+      : state.fixtureSourceFailed
+        ? "Fixture feed unavailable"
+        : "No upcoming fixtures";
+    document.getElementById("fixtures").innerHTML = upcoming.length
+      ? upcoming.map(m => `
+        <div class="fixture-pill">
+          <div class="opp-wrap">
+            ${m.badge ? `<img class="opp-logo" src="${m.badge}" alt="" onerror="this.remove()">` : ""}
+            <span class="opp-name">${m.opponent}</span>
+            <span class="venue-badge ${m.isHome ? "home" : ""}">${m.isHome ? "H" : "A"}</span>
+          </div>
+          <span class="kickoff">${formatFixtureTime(m.utcDate)}</span>
+        </div>
+      `).join("")
+      : `<div class="fixture-pill"><span class="kickoff">${emptyFixtureText}</span></div>`;
+  }
+
+  function fetchAllData() {
+    const requestId = ++latestDataRequest;
+    beginRefreshTask();
+    return fetchAllDataTask(requestId).finally(() => {
+      endRefreshTask();
+      if (requestId !== latestDataRequest) return;
+      state.loading = false;
+      renderView();
+    });
+  }
+
+  function refreshWidget() {
+    if (Number(state.standing?.pos) === 1) showGoldConfetti();
+    fetchAllData();
+    fetchNews();
+  }
+
+  function showGoldConfetti() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const layer = document.getElementById("confetti-layer");
+    const fallDistance = `${layer.clientHeight + 24}px`;
+
+    for (let i = 0; i < 36; i++) {
+      const piece = document.createElement("span");
+      piece.className = "confetti-piece";
+      piece.style.left = `${Math.random() * 100}%`;
+      piece.style.setProperty("--fall-distance", fallDistance);
+      piece.style.setProperty("--drift", `${Math.round(Math.random() * 120 - 60)}px`);
+      piece.style.setProperty("--spin", `${Math.round(Math.random() * 720 - 360)}deg`);
+      piece.style.setProperty("--duration", `${1400 + Math.round(Math.random() * 700)}ms`);
+      piece.style.setProperty("--delay", `${Math.round(Math.random() * 180)}ms`);
+      piece.addEventListener("animationend", () => piece.remove(), { once: true });
+      layer.appendChild(piece);
+    }
+  }
+
+  const widgetElement = document.getElementById("widget");
+  widgetElement.addEventListener("pointermove", event => {
+    const widgetRect = widgetElement.getBoundingClientRect();
+    widgetElement.style.setProperty("--cursor-x", `${event.clientX - widgetRect.left}px`);
+    widgetElement.style.setProperty("--cursor-y", `${event.clientY - widgetRect.top}px`);
+    widgetElement.classList.add("cursor-active");
+
+    const button = event.target.closest("button");
+    if (button && widgetElement.contains(button)) {
+      const buttonRect = button.getBoundingClientRect();
+      button.style.setProperty("--button-x", `${event.clientX - buttonRect.left}px`);
+      button.style.setProperty("--button-y", `${event.clientY - buttonRect.top}px`);
+    }
+  });
+  widgetElement.addEventListener("pointerleave", () => widgetElement.classList.remove("cursor-active"));
+
+  async function fetchAllDataTask(requestId) {
+    state.loading = true;
+    applyTheme();
+    renderView();
+
+    const dateRange = getDateRangeParam();
+    const [domStand, teamInfo, domSched, leagueBoard] = await Promise.all([
+      corsJSON(`https://site.api.espn.com/apis/v2/sports/soccer/${config.league}/standings`),
+      corsJSON(`https://site.api.espn.com/apis/site/v2/sports/soccer/${config.league}/teams/${config.teamId}`),
+      corsJSON(`https://site.api.espn.com/apis/site/v2/sports/soccer/${config.league}/teams/${config.teamId}/schedule`),
+      corsJSON(`https://site.api.espn.com/apis/site/v2/sports/soccer/${config.league}/scoreboard?dates=${dateRange}`)
+    ]);
+    if (requestId !== latestDataRequest) return;
+
+    if (teamInfo?.team) {
+      config.shortName = teamInfo.team.shortDisplayName || config.shortName;
+      config.color = teamInfo.team.color || config.color;
+      config.altColor = teamInfo.team.alternateColor || config.altColor;
+      applyTheme();
+    }
+
+    const parsedStanding = parseStandings(domStand);
+    if (parsedStanding) state.standing = parsedStanding;
+
+    const teamScheduleEvents = [
+      ...normalizeEventCollection(teamInfo?.team?.nextEvent),
+      ...normalizeEventCollection(domSched?.nextEvent),
+      ...normalizeEventCollection(domSched?.events)
+    ];
+    const combinedEvents = [
+      ...teamScheduleEvents,
+      ...normalizeEventCollection(leagueBoard?.events)
+    ];
+    const extracted = extractEvents(combinedEvents);
+    const recentCutoff = Date.now() - 2 * 3600 * 1000;
+    const cachedUpcoming = state.matches.filter(match => {
+      const timestamp = new Date(match?.utcDate).getTime();
+      return Number.isFinite(timestamp) && timestamp > recentCutoff;
+    });
+    state.matches = extracted.length > 0 ? extracted : cachedUpcoming;
+    const hasExplicitTeamNextEvent = [
+      ...normalizeEventCollection(teamInfo?.team?.nextEvent),
+      ...normalizeEventCollection(domSched?.nextEvent)
+    ].length > 0;
+    const hasConfiguredTeamDetails = [teamInfo?.team, domSched?.team].some(team => {
+      const id = String(team?.id || team?.uid || "");
+      return id === String(config.teamId) || id.endsWith(`~t:${config.teamId}`);
+    });
+    const hasTeamSchedulePayload = hasExplicitTeamNextEvent || (
+      hasConfiguredTeamDetails &&
+      ["events", "items"].some(key => Array.isArray(domSched?.[key]))
+    );
+    const hasLeagueSchedulePayload = Array.isArray(leagueBoard?.events);
+    const hasFutureTeamEvent = teamScheduleEvents.some(event => {
+      const timestamp = new Date(getEventCompetitors(event).date).getTime();
+      return Number.isFinite(timestamp) && timestamp > recentCutoff;
+    });
+    state.fixtureSourceFailed = state.matches.length === 0 && (
+      !hasTeamSchedulePayload || !hasLeagueSchedulePayload || hasFutureTeamEvent
+    );
+
+    // Save good snapshot so widget never blanks out offline
+    if (state.standing || state.matches.length > 0) {
+      try {
+        localStorage.setItem(`${CACHE_KEY}_${config.league}_${config.teamId}`, JSON.stringify({
+          standing: state.standing,
+          matches: state.matches
+        }));
+      } catch (_) {}
+    }
+
+  }
+
+  fetchAllData();
+  setInterval(fetchAllData, 30 * 60 * 1000);
+  fetchNews();
+  setInterval(fetchNews, 30 * 60 * 1000);
+</script>
+</body>
+</html>
