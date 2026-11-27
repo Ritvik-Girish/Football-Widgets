@@ -36,7 +36,7 @@
 Clone the repository or download the source ZIP directly from GitHub:
 
 ```bash
-git clone [https://github.com/Ritvik-Girish/universal-football-widget.git](https://github.com/Ritvik-Girish/universal-football-widget.git)
+git clone [https://github.com/Ritvik-Girish/Football-Widgets](https://github.com/Ritvik-Girish/Football-Widgets)
 ```
 
 ### 2. Run as a Desktop Widget
